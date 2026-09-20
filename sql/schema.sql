@@ -1,0 +1,4 @@
+CREATE TABLE IF NOT EXISTS schema_probe (
+    id   BIGSERIAL PRIMARY KEY,
+    note VARCHAR(255)
+);
