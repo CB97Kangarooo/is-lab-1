@@ -8,13 +8,17 @@
     <persistence-unit name="labPU" transaction-type="JTA">
         <jta-data-source>java:app/jdbc/studs</jta-data-source>
 
-        <class>ru.itmo.is.lab.entity.SchemaProbe</class>
+        <class>ru.itmo.is.lab.entity.HumanBeing</class>
+        <class>ru.itmo.is.lab.entity.Car</class>
         <exclude-unlisted-classes>false</exclude-unlisted-classes>
+
+        <validation-mode>CALLBACK</validation-mode>
 
         <properties>
             <property name="hibernate.hbm2ddl.auto" value="validate"/>
             <property name="hibernate.show_sql" value="true"/>
             <property name="hibernate.format_sql" value="true"/>
+            <property name="hibernate.check_nullability" value="true"/>
         </properties>
     </persistence-unit>
 </persistence>
