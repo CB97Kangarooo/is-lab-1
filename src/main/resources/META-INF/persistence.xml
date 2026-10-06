@@ -19,6 +19,7 @@
             <property name="hibernate.show_sql" value="true"/>
             <property name="hibernate.format_sql" value="true"/>
             <property name="hibernate.check_nullability" value="true"/>
+            <property name="hibernate.criteria.literal_handling_mode" value="BIND"/>
         </properties>
     </persistence-unit>
 </persistence>
