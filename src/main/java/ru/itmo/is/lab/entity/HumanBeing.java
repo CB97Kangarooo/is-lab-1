@@ -14,6 +14,7 @@ import javax.persistence.JoinColumn;
 import javax.persistence.OneToOne;
 import javax.persistence.PrePersist;
 import javax.persistence.Table;
+import javax.persistence.Version;
 import javax.validation.Valid;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.NotBlank;
@@ -28,6 +29,10 @@ public class HumanBeing {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Version
+    @Column(name = "version", nullable = false)
+    private Long version;
 
     @NotBlank(message = "Имя не может быть пустым")
     @Size(max = 255, message = "Имя — не длиннее 255 символов")
@@ -76,6 +81,8 @@ public class HumanBeing {
     }
 
     public Long getId() { return id; }
+
+    public Long getVersion() { return version; }
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }

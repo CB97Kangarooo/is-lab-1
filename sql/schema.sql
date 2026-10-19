@@ -11,6 +11,7 @@ CREATE TABLE car (
 
 CREATE TABLE human_being (
     id             BIGSERIAL        PRIMARY KEY,
+    version        BIGINT           NOT NULL,
     name           VARCHAR(255)     NOT NULL,
     x              DOUBLE PRECISION NOT NULL,
     y              DOUBLE PRECISION NOT NULL,   -- в Java примитив double: null невозможен
