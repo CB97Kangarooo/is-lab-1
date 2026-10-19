@@ -8,6 +8,6 @@
 
 ## Быстрый старт
 
-1. Поднять PostgreSQL, применить `sql/schema.sql`.
+1. Поднять PostgreSQL, последовательно применить `sql/schema.sql` и `sql/functions.sql`.
 2. Настроить datasource в `DatasourceConfig.java` под свою БД.
 3. `mvn clean package` → задеплоить `target/lab-is.war` на WildFly.
