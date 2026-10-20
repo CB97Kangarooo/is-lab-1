@@ -4,6 +4,7 @@ import ru.itmo.is.lab.dto.HumanBeingDto;
 import ru.itmo.is.lab.event.ChangeType;
 import ru.itmo.is.lab.event.DataChangedEvent;
 import ru.itmo.is.lab.mapper.HumanBeingMapper;
+import ru.itmo.is.lab.repository.HumanBeingRepository;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Event;
@@ -22,6 +23,9 @@ public class SpecialOperationService {
     private EntityManager em;
 
     @Inject
+    private HumanBeingRepository humanBeingRepository;
+
+    @Inject
     private HumanBeingMapper humanBeingMapper;
 
     @Inject
@@ -33,20 +37,32 @@ public class SpecialOperationService {
     }
 
     @Transactional(Transactional.TxType.REQUIRED)
-    public double averageImpactSpeed() {
-        return ((Number) em.createNativeQuery("SELECT avg_impact_speed()").getSingleResult()).doubleValue();
+    public Double averageImpactSpeed() {
+        Number average = (Number) em.createNativeQuery("SELECT avg_impact_speed()").getSingleResult();
+        return average == null ? null : average.doubleValue();
     }
 
+    /**
+     * Поиск по префиксу выполняет функция БД, но возвращает только id: сущности догружает
+     * репозиторий одним запросом с fetch join'ом машины. Маппинг результата функции прямо
+     * в {@code HumanBeing} давал бы N+1 — функция отдаёт {@code SETOF human_being},
+     * то есть машины в выборке нет, а {@code toDto} обращается к LAZY-связи.
+     */
     @Transactional(Transactional.TxType.REQUIRED)
-    @SuppressWarnings("unchecked")
     public List<HumanBeingDto> findByNamePrefix(String prefix) {
         Objects.requireNonNull(prefix, "prefix не может быть null");
-        return ((List<ru.itmo.is.lab.entity.HumanBeing>) em
-                .createNativeQuery("SELECT * FROM find_by_name_prefix(?)", ru.itmo.is.lab.entity.HumanBeing.class)
-                .setParameter(1, prefix)
-                .getResultList())
-                .stream()
+        return humanBeingRepository.findAllByIds(findIdsByNamePrefix(prefix)).stream()
                 .map(humanBeingMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Long> findIdsByNamePrefix(String prefix) {
+        List<Number> ids = em.createNativeQuery("SELECT id FROM find_by_name_prefix(?)")
+                .setParameter(1, prefix)
+                .getResultList();
+        return ids.stream()
+                .map(Number::longValue)
                 .collect(Collectors.toList());
     }
 
