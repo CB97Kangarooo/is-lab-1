@@ -1,5 +1,5 @@
 import { request } from './client';
-import type { Hero, PageResponse } from './types';
+import type { Hero, HeroInput, HeroUpdate, PageResponse } from './types';
 
 export type SortOrder = 'asc' | 'desc';
 
@@ -27,4 +27,20 @@ export function listHeroes(params: HeroListParams, signal?: AbortSignal): Promis
     }
   }
   return request<PageResponse<Hero>>('GET', '/human-beings', { query, signal });
+}
+
+export function createHero(input: HeroInput): Promise<Hero> {
+  return request<Hero>('POST', '/human-beings', { body: input });
+}
+
+export function getHero(id: number | string, signal?: AbortSignal): Promise<Hero> {
+  return request<Hero>('GET', `/human-beings/${id}`, { signal });
+}
+
+export function updateHero(id: number, input: HeroUpdate): Promise<Hero> {
+  return request<Hero>('PUT', `/human-beings/${id}`, { body: input });
+}
+
+export function deleteHero(id: number): Promise<void> {
+  return request<void>('DELETE', `/human-beings/${id}`);
 }

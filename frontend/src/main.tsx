@@ -6,6 +6,8 @@ import '@fontsource/cormorant/latin-500.css';
 import '@fontsource/cormorant/cyrillic-500.css';
 import './styles/base.css';
 import './styles/table.css';
+import './styles/dialog.css';
+import './styles/dialog.css';
 
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
