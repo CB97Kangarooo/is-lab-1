@@ -1,7 +1,9 @@
+import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { getHero } from '../api/heroes';
 import type { Hero } from '../api/types';
 import { useAsyncLoader } from '../hooks/useAsyncLoader';
+import { touchesHero, useChangeSignal } from '../realtime/useChangeSignal';
 import { dossierNumber, formatDate } from '../lib/format';
 import { Dash, Flag, ImpactSpeed, MoodScale, Text } from './Cells';
 import { Dialog } from './Dialog';
@@ -11,12 +13,46 @@ interface HeroViewProps {
   onClose: () => void;
   onEdit: (hero: Hero) => void;
   onDelete: (hero: Hero) => void;
+  /** Героя удалил другой пользователь: родитель закрывает диалог и показывает уведомление. */
+  onRemoved: () => void;
 }
 
-export function HeroView({ id, onClose, onEdit, onDelete }: HeroViewProps) {
+export function HeroView({ id, onClose, onEdit, onDelete, onRemoved }: HeroViewProps) {
   const loader = useAsyncLoader((signal) => getHero(id, signal), [id]);
   const hero = loader.data;
   const notFound = loader.error !== null && loader.errorStatus === 404;
+
+  // Просмотр (не правка) можно обновлять сразу; если версия поменялась — говорим об этом, а не подменяем молча.
+  const [note, setNote] = useState<string | null>(null);
+  const pushed = useRef(false);
+  const seenVersion = useRef<number | null>(null);
+
+  useChangeSignal(
+    (events) => {
+      const { deleted, maybeChanged } = touchesHero(events, Number(id));
+      if (deleted) {
+        onRemoved();
+      } else if (maybeChanged && hero) {
+        pushed.current = true;
+        loader.reload();
+      }
+    },
+    { entities: ['human'] },
+  );
+
+  useEffect(() => {
+    if (loader.loading) return;
+    if (pushed.current && notFound) {
+      onRemoved(); // удалён, пока шла пересинхронизация после обрыва
+    } else if (hero && !loader.error) {
+      if (pushed.current && seenVersion.current !== null && hero.version !== seenVersion.current) {
+        setNote('Данные обновлены: героя изменил другой пользователь.');
+      }
+      seenVersion.current = hero.version;
+    }
+    pushed.current = false;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loader.loading, hero, notFound]);
 
   return (
     <Dialog number={dossierNumber(id)} title="Досье героя" onClose={onClose}>
@@ -34,6 +70,11 @@ export function HeroView({ id, onClose, onEdit, onDelete }: HeroViewProps) {
             Повторить
           </button>
         </div>
+      )}
+      {note && hero && !loader.error && (
+        <p className="banner" role="status">
+          {note}
+        </p>
       )}
       {hero && !loader.error && (
         <>

@@ -5,7 +5,7 @@ import { listFreeCars } from '../api/cars';
 import { createHero, getHero, updateHero } from '../api/heroes';
 import type { Car, Hero } from '../api/types';
 import { useAsyncLoader } from '../hooks/useAsyncLoader';
-import { useChangeSignal } from '../realtime/useChangeSignal';
+import { touchesHero, useChangeSignal } from '../realtime/useChangeSignal';
 import { EMPTY_FORM, MOODS, WEAPON_TYPES, fromHero, mapServerErrors, toInput, validate } from '../lib/heroForm';
 import type { FieldErrors, FieldName, HeroFormValues } from '../lib/heroForm';
 import { dossierNumber } from '../lib/format';
@@ -29,11 +29,13 @@ interface HeroFormProps {
   onClose: () => void;
   /** Изменение сохранено: родитель закрывает диалог и перезагружает таблицу. */
   onSaved: () => void;
-  /** Героя удалили другие: родитель перезагружает таблицу, диалог остаётся с сообщением. */
+  /** Героя удалили другие (выяснилось при сохранении): родитель перезагружает таблицу, диалог остаётся с сообщением. */
   onGone?: () => void;
+  /** Сигнал по WebSocket: героя удалил другой пользователь — родитель закрывает диалог с уведомлением. */
+  onRemoved?: () => void;
 }
 
-export function HeroForm({ hero, onClose, onSaved, onGone }: HeroFormProps) {
+export function HeroForm({ hero, onClose, onSaved, onGone, onRemoved }: HeroFormProps) {
   const isEdit = Boolean(hero);
   const [values, setValues] = useState<HeroFormValues>(hero ? fromHero(hero) : EMPTY_FORM);
   const [version, setVersion] = useState(hero?.version ?? 0);
@@ -47,6 +49,8 @@ export function HeroForm({ hero, onClose, onSaved, onGone }: HeroFormProps) {
   const [saving, setSaving] = useState(false);
   const [gone, setGone] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
+  /** Идёт наш собственный PUT: сигнал о нём приходит раньше HTTP-ответа (рассылка сразу после commit). */
+  const savingRef = useRef(false);
 
   const cars = useAsyncLoader((signal) => listFreeCars(signal), []);
   const carOptions: Car[] = useMemo(() => {
@@ -56,6 +60,38 @@ export function HeroForm({ hero, onClose, onSaved, onGone }: HeroFormProps) {
 
   // справочник свободных машин: новую машину могли создать, свободную — занять другим героем
   useChangeSignal(cars.reload);
+
+  // Правка открыта, а героя изменили или удалили другие. Форму не перезаписываем: показываем баннер
+  // с кнопкой «Загрузить актуальную версию»; сохранение старой версии сервер всё равно отклонит (409, @Version).
+  useChangeSignal(
+    async (events) => {
+      if (!hero || gone || savingRef.current) return;
+      const { deleted, maybeChanged } = touchesHero(events, hero.id);
+      if (deleted) {
+        if (onRemoved) onRemoved();
+        else markGone();
+        return;
+      }
+      if (!maybeChanged) return;
+      try {
+        const fresh = await getHero(hero.id);
+        if (!savingRef.current && fresh.version !== version) {
+          setBanner({
+            text:
+              'Героя изменил другой пользователь. Загрузите актуальную версию — несохранённые правки будут заменены. ' +
+              'Если сохранить сейчас, сервер отклонит изменение из-за конфликта версий.',
+            canReload: true,
+          });
+        }
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 404 && !savingRef.current) {
+          if (onRemoved) onRemoved();
+          else markGone();
+        }
+      }
+    },
+    { entities: ['human'] },
+  );
 
   // выбранную свободную машину занял другой пользователь: возвращаем исходный выбор и говорим почему
   useEffect(() => {
@@ -179,6 +215,7 @@ export function HeroForm({ hero, onClose, onSaved, onGone }: HeroFormProps) {
       return;
     }
     setSaving(true);
+    savingRef.current = true;
     setBanner(null);
     setServerErrors({});
     try {
@@ -189,6 +226,7 @@ export function HeroForm({ hero, onClose, onSaved, onGone }: HeroFormProps) {
       }
       onSaved();
     } catch (error) {
+      savingRef.current = false;
       await handleError(error);
     } finally {
       setSaving(false);
