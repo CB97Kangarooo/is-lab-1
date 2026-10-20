@@ -1,0 +1,120 @@
+/* ---------- спецоперации: пять блоков-карточек, разделённых линиями ---------- */
+.ops {
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 56px;
+}
+
+.op {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) 2fr;
+  gap: 16px 40px;
+  padding: 24px 0;
+  border-top: 1px solid var(--ink);
+}
+
+.op + .op {
+  border-top-color: var(--rule);
+}
+
+.op-no {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+
+.op-head h2 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 1.7rem;
+  line-height: 1.05;
+  margin-bottom: 8px;
+}
+
+.op-head p {
+  font-size: 13px;
+}
+
+.op-body {
+  min-width: 0;
+}
+
+.op-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.op-form .field {
+  flex: 1 1 220px;
+  max-width: 420px;
+}
+
+.outcome {
+  margin-top: 16px;
+  min-height: 1px;
+}
+
+.outcome .banner {
+  margin-bottom: 0;
+}
+
+.result {
+  font-size: 2.2rem;
+  line-height: 1.1;
+  font-weight: 500;
+}
+
+.result-count {
+  margin-bottom: 8px;
+}
+
+.found {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 360px;
+  overflow-y: auto;
+  border-top: 1px solid var(--rule);
+}
+
+.found-row {
+  display: grid;
+  grid-template-columns: 96px 1fr auto;
+  gap: 16px;
+  align-items: baseline;
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  border-radius: 0;
+  padding: 8px 0 8px 12px;
+  cursor: pointer;
+  position: relative;
+}
+
+.found-row:hover::before,
+.found-row:focus-visible::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--accent);
+}
+
+.found-id {
+  color: var(--muted);
+}
+
+@media (max-width: 900px) {
+  .op {
+    grid-template-columns: 1fr;
+  }
+}
