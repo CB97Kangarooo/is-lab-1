@@ -16,6 +16,8 @@ import javax.persistence.criteria.Order;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -23,19 +25,12 @@ import java.util.Map;
 @ApplicationScoped
 public class HumanBeingRepository {
 
-    static final int MAX_LIMIT = 100;
-
     @PersistenceContext
     private EntityManager em;
 
     public List<HumanBeing> findPage(int offset, int limit, String sortField,
                                      SortOrder sortOrder, Map<String, String> filters) {
-        if (offset < 0) {
-            throw new IllegalArgumentException("offset должен быть >= 0");
-        }
-        if (limit < 1 || limit > MAX_LIMIT) {
-            throw new IllegalArgumentException("limit должен быть от 1 до " + MAX_LIMIT);
-        }
+        Pagination.validate(offset, limit);
 
         CriteriaBuilder cb = em.getCriteriaBuilder();
         CriteriaQuery<HumanBeing> cq = cb.createQuery(HumanBeing.class);
@@ -50,6 +45,27 @@ public class HumanBeingRepository {
                 .setFirstResult(offset)
                 .setMaxResults(limit)
                 .getResultList();
+    }
+
+    /**
+     * Герои по списку id, порядок — по возрастанию id. Как и {@code findPage}, тянет {@code car}
+     * fetch join'ом: иначе сборка DTO дала бы по запросу на каждого героя (N+1).
+     */
+    public List<HumanBeing> findAllByIds(Collection<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        CriteriaBuilder cb = em.getCriteriaBuilder();
+        CriteriaQuery<HumanBeing> cq = cb.createQuery(HumanBeing.class);
+        Root<HumanBeing> root = cq.from(HumanBeing.class);
+        root.fetch(HumanBeing_.car, JoinType.LEFT);
+
+        cq.select(root)
+                .where(root.get(HumanBeing_.id).in(ids))
+                .orderBy(cb.asc(root.get(HumanBeing_.id)));
+
+        return em.createQuery(cq).getResultList();
     }
 
     public long countAll(Map<String, String> filters) {
