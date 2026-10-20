@@ -42,6 +42,12 @@
                 <version>3.3.2</version>
                 <configuration>
                     <failOnMissingWebXml>false</failOnMissingWebXml>
+                    <!-- Готовая статика UI (npm run build в frontend/) кладётся в корень war -->
+                    <webResources>
+                        <resource>
+                            <directory>frontend/dist</directory>
+                        </resource>
+                    </webResources>
                 </configuration>
             </plugin>
             <plugin>
