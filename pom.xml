@@ -31,6 +31,14 @@
             <artifactId>postgresql</artifactId>
             <version>42.2.27</version>
         </dependency>
+
+        <!-- Тесты: только JUnit 5, сессии WebSocket подделываются через java.lang.reflect.Proxy -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.10.2</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -64,6 +72,12 @@
                         </path>
                     </annotationProcessorPaths>
                 </configuration>
+            </plugin>
+            <plugin>
+                <!-- Surefire по умолчанию (2.12) не видит тесты JUnit 5 -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.5</version>
             </plugin>
         </plugins>
     </build>
