@@ -5,6 +5,7 @@ import { listFreeCars } from '../api/cars';
 import { createHero, getHero, updateHero } from '../api/heroes';
 import type { Car, Hero } from '../api/types';
 import { useAsyncLoader } from '../hooks/useAsyncLoader';
+import { useChangeSignal } from '../realtime/useChangeSignal';
 import { EMPTY_FORM, MOODS, WEAPON_TYPES, fromHero, mapServerErrors, toInput, validate } from '../lib/heroForm';
 import type { FieldErrors, FieldName, HeroFormValues } from '../lib/heroForm';
 import { dossierNumber } from '../lib/format';
@@ -52,6 +53,20 @@ export function HeroForm({ hero, onClose, onSaved, onGone }: HeroFormProps) {
     const free: Car[] = cars.data?.items ?? [];
     return currentCar && !free.some((c) => c.id === currentCar.id) ? [currentCar, ...free] : free;
   }, [cars.data, currentCar]);
+
+  // справочник свободных машин: новую машину могли создать, свободную — занять другим героем
+  useChangeSignal(cars.reload);
+
+  // выбранную свободную машину занял другой пользователь: возвращаем исходный выбор и говорим почему
+  useEffect(() => {
+    if (!cars.data || !values.carId) return;
+    if (!carOptions.some((car) => String(car.id) === values.carId)) {
+      setValues((prev) => ({ ...prev, carId: currentCar ? String(currentCar.id) : '' }));
+      setServerErrors((prev) => ({ ...prev, carId: 'Эту машину занял другой пользователь — выберите другую' }));
+    }
+    // реагируем только на новый список машин, а не на каждый выбор в форме
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cars.data]);
 
   const clientErrors = validate(values);
   const errorFor = (field: FieldName): string | undefined => {
