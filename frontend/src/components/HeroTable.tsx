@@ -41,6 +41,9 @@ interface HeroTableProps {
   filterInputs: Filters;
   filtered: boolean;
   onFilter: (key: FilterKey, value: string) => void;
+  onOpen: (hero: Hero) => void;
+  onEdit: (hero: Hero) => void;
+  onDelete: (hero: Hero) => void;
   onRetry: () => void;
 }
 
@@ -54,9 +57,12 @@ export function HeroTable({
   filterInputs,
   filtered,
   onFilter,
+  onOpen,
+  onEdit,
+  onDelete,
   onRetry,
 }: HeroTableProps) {
-  const colSpan = COLUMNS.length;
+  const colSpan = COLUMNS.length + 1;
 
   let stateRow: ReactNode = null;
   if (error) {
@@ -100,6 +106,9 @@ export function HeroTable({
                   </th>
                 );
               })}
+              <th scope="col" className="actions-head">
+                <span className="visually-hidden">Действия</span>
+              </th>
             </tr>
             <tr className="filter-row">
               {COLUMNS.map((col) => (
@@ -117,6 +126,7 @@ export function HeroTable({
                   )}
                 </td>
               ))}
+              <td />
             </tr>
           </thead>
           <tbody>
@@ -128,6 +138,19 @@ export function HeroTable({
                       {col.render(hero)}
                     </td>
                   ))}
+                  <td className="actions">
+                    <button type="button" className="btn" aria-label={`Открыть героя ${hero.id}`} onClick={() => onOpen(hero)}>
+                      открыть
+                    </button>
+                    <span aria-hidden="true"> · </span>
+                    <button type="button" className="btn" aria-label={`Изменить героя ${hero.id}`} onClick={() => onEdit(hero)}>
+                      изменить
+                    </button>
+                    <span aria-hidden="true"> · </span>
+                    <button type="button" className="btn" aria-label={`Удалить героя ${hero.id}`} onClick={() => onDelete(hero)}>
+                      удалить
+                    </button>
+                  </td>
                 </tr>
               ))}
           </tbody>

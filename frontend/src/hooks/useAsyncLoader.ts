@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { DependencyList } from 'react';
-import { errorMessage, isAbortError } from '../api/client';
+import { ApiError, errorMessage, isAbortError } from '../api/client';
 
 interface LoaderState<T> {
   data: T | null;
   loading: boolean;
   error: string | null;
+  /** HTTP-статус ошибки API (0 — нет связи), если он известен. */
+  errorStatus: number | null;
 }
 
 /**
@@ -15,7 +17,7 @@ interface LoaderState<T> {
  * Прежние данные остаются на экране, пока идёт перезагрузка.
  */
 export function useAsyncLoader<T>(load: (signal: AbortSignal) => Promise<T>, deps: DependencyList) {
-  const [state, setState] = useState<LoaderState<T>>({ data: null, loading: true, error: null });
+  const [state, setState] = useState<LoaderState<T>>({ data: null, loading: true, error: null, errorStatus: null });
   const loadRef = useRef(load);
   loadRef.current = load;
   const sequence = useRef(0);
@@ -26,18 +28,23 @@ export function useAsyncLoader<T>(load: (signal: AbortSignal) => Promise<T>, dep
     const current = new AbortController();
     controller.current = current;
     const id = ++sequence.current;
-    setState((prev) => ({ ...prev, loading: true, error: null }));
+    setState((prev) => ({ ...prev, loading: true, error: null, errorStatus: null }));
     loadRef.current(current.signal).then(
       (data) => {
         if (id === sequence.current) {
-          setState({ data, loading: false, error: null });
+          setState({ data, loading: false, error: null, errorStatus: null });
         }
       },
       (error: unknown) => {
         if (id !== sequence.current || isAbortError(error)) {
           return;
         }
-        setState((prev) => ({ ...prev, loading: false, error: errorMessage(error) }));
+        setState((prev) => ({
+          ...prev,
+          loading: false,
+          error: errorMessage(error),
+          errorStatus: error instanceof ApiError ? error.status : null,
+        }));
       },
     );
   }, []);

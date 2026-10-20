@@ -12,7 +12,7 @@
 
 table.grid {
   width: 100%;
-  min-width: 1180px;
+  min-width: 1100px;
   border-collapse: collapse;
 }
 
@@ -20,10 +20,10 @@ table.grid {
   font-weight: 400;
   font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.05em;
   color: var(--muted);
   text-align: left;
-  padding: 0 14px 8px 0;
+  padding: 0 10px 8px 0;
   white-space: nowrap;
   vertical-align: bottom;
 }
@@ -64,7 +64,7 @@ table.grid {
 }
 
 .grid td {
-  padding: 9px 14px 9px 0;
+  padding: 9px 10px 9px 0;
   border-bottom: 1px solid var(--rule);
   vertical-align: middle;
   white-space: nowrap;
@@ -73,8 +73,8 @@ table.grid {
 .grid td.wide {
   white-space: normal;
   overflow-wrap: anywhere;
-  min-width: 150px;
-  max-width: 260px;
+  min-width: 130px;
+  max-width: 220px;
 }
 
 .grid tbody td:first-child {
@@ -113,13 +113,13 @@ table.grid {
 
 /* фильтры встроены в строку под заголовком */
 .grid .filter-row td {
-  padding: 6px 14px 6px 0;
+  padding: 6px 10px 6px 0;
   border-bottom: 1px solid var(--ink);
 }
 
 .filter-row input[type='search'] {
   font-size: 13px;
-  min-width: 96px;
+  min-width: 70px;
   -webkit-appearance: none;
   appearance: none;
 }
@@ -193,4 +193,60 @@ table.grid {
 .pager-size select {
   width: auto;
   min-width: 54px;
+}
+
+.grid td.actions {
+  white-space: nowrap;
+  color: var(--muted);
+}
+
+.grid .filter-row td:last-child,
+.grid th.actions-head {
+  width: 1%;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---------- «открыть по id» в шапке ---------- */
+.open-id label {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.open-id-row {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 14px;
+}
+
+.open-id input {
+  width: 110px;
+}
+
+.open-id .field-error {
+  margin-top: 5px;
+  padding-left: 8px;
+  border-left: 2px solid var(--accent);
+  font-size: 12px;
+}
+
+table.grid.grid-narrow {
+  min-width: 560px;
+}
+
+.check-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
 }
