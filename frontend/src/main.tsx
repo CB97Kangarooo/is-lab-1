@@ -8,6 +8,7 @@ import './styles/base.css';
 import './styles/table.css';
 import './styles/dialog.css';
 import './styles/special.css';
+import './styles/realtime.css';
 
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';

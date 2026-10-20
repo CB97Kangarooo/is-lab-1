@@ -1,0 +1,91 @@
+/* Шаг 7: индикатор соединения и уведомления — те же линии 1px и один акцент. */
+.topbar-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.live {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.live::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border: 1px solid var(--muted);
+}
+
+.live[data-state='open']::before {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.live[data-state='connecting']::before,
+.live[data-state='reconnecting']::before {
+  animation: live-blink 1.2s steps(2, jump-none) infinite;
+}
+
+.live[data-state='offline'] {
+  color: var(--accent);
+}
+
+.live[data-state='offline']::before {
+  border-color: var(--accent);
+}
+
+@keyframes live-blink {
+  from {
+    background: transparent;
+  }
+  to {
+    background: var(--muted);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live::before {
+    animation: none !important;
+  }
+}
+
+.notices {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: min(420px, calc(100vw - 32px));
+}
+
+.notice {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 18px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-left: 2px solid var(--accent);
+  padding: 10px 14px;
+}
+
+.notice .btn {
+  flex: none;
+  font-size: 12px;
+}
+
+@media (max-width: 900px) {
+  .notices {
+    right: 16px;
+    bottom: 16px;
+  }
+}
