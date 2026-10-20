@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import type { Hero } from '../api/types';
-import type { SortState } from '../hooks/useHeroTable';
+import type { FilterKey, Filters, SortState } from '../hooks/useHeroTable';
 import { formatDate } from '../lib/format';
 import { Flag, ImpactSpeed, MoodScale, Text } from './Cells';
 
@@ -11,22 +11,24 @@ interface Column {
   label: string;
   numeric?: boolean;
   wide?: boolean;
+  /** Колонка с серверным фильтром по неполному совпадению. */
+  filter?: FilterKey;
   render: (hero: Hero) => ReactNode;
 }
 
 const COLUMNS: Column[] = [
   { id: 'id', sortKey: 'id', label: 'id', numeric: true, render: (h) => h.id },
-  { id: 'name', sortKey: 'name', label: 'name', wide: true, render: (h) => h.name },
+  { id: 'name', sortKey: 'name', label: 'name', wide: true, filter: 'name', render: (h) => h.name },
   { id: 'x', sortKey: 'coordinates.x', label: 'x', numeric: true, render: (h) => h.coordinates.x },
   { id: 'y', sortKey: 'coordinates.y', label: 'y', numeric: true, render: (h) => h.coordinates.y },
   { id: 'creationDate', sortKey: 'creationDate', label: 'creationDate', render: (h) => formatDate(h.creationDate) },
   { id: 'realHero', sortKey: 'realHero', label: 'realHero', render: (h) => <Flag value={h.realHero} /> },
   { id: 'hasToothpick', sortKey: 'hasToothpick', label: 'hasToothpick', render: (h) => <Flag value={h.hasToothpick} /> },
-  { id: 'car.name', sortKey: 'car.name', label: 'car.name', wide: true, render: (h) => <Text value={h.car?.name} /> },
+  { id: 'car.name', sortKey: 'car.name', label: 'car.name', wide: true, filter: 'car.name', render: (h) => <Text value={h.car?.name} /> },
   { id: 'car.cool', sortKey: 'car.cool', label: 'car.cool', render: (h) => <Flag value={h.car ? h.car.cool : null} /> },
-  { id: 'mood', sortKey: 'mood', label: 'mood', render: (h) => <MoodScale mood={h.mood} /> },
+  { id: 'mood', sortKey: 'mood', label: 'mood', filter: 'mood', render: (h) => <MoodScale mood={h.mood} /> },
   { id: 'impactSpeed', sortKey: 'impactSpeed', label: 'impactSpeed', render: (h) => <ImpactSpeed value={h.impactSpeed} /> },
-  { id: 'weaponType', sortKey: 'weaponType', label: 'weaponType', render: (h) => <Text value={h.weaponType} /> },
+  { id: 'weaponType', sortKey: 'weaponType', label: 'weaponType', filter: 'weaponType', render: (h) => <Text value={h.weaponType} /> },
 ];
 
 interface HeroTableProps {
@@ -36,10 +38,24 @@ interface HeroTableProps {
   loading: boolean;
   hasData: boolean;
   error: string | null;
+  filterInputs: Filters;
+  filtered: boolean;
+  onFilter: (key: FilterKey, value: string) => void;
   onRetry: () => void;
 }
 
-export function HeroTable({ items, sort, onSort, loading, hasData, error, onRetry }: HeroTableProps) {
+export function HeroTable({
+  items,
+  sort,
+  onSort,
+  loading,
+  hasData,
+  error,
+  filterInputs,
+  filtered,
+  onFilter,
+  onRetry,
+}: HeroTableProps) {
   const colSpan = COLUMNS.length;
 
   let stateRow: ReactNode = null;
@@ -55,7 +71,9 @@ export function HeroTable({ items, sort, onSort, loading, hasData, error, onRetr
   } else if (!hasData) {
     stateRow = <div className="state muted">Загрузка…</div>;
   } else if (items.length === 0) {
-    stateRow = <div className="state muted">Героев нет</div>;
+    stateRow = (
+      <div className="state muted">{filtered ? 'Ничего не найдено по заданным фильтрам' : 'Героев нет'}</div>
+    );
   }
 
   return (
@@ -82,6 +100,23 @@ export function HeroTable({ items, sort, onSort, loading, hasData, error, onRetr
                   </th>
                 );
               })}
+            </tr>
+            <tr className="filter-row">
+              {COLUMNS.map((col) => (
+                <td key={col.id}>
+                  {col.filter && (
+                    <input
+                      type="search"
+                      value={filterInputs[col.filter]}
+                      onChange={(e) => onFilter(col.filter!, e.target.value)}
+                      placeholder="фильтр"
+                      aria-label={`Фильтр по ${col.label}`}
+                      autoComplete="off"
+                      spellCheck={false}
+                    />
+                  )}
+                </td>
+              ))}
             </tr>
           </thead>
           <tbody>

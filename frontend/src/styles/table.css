@@ -25,7 +25,6 @@ table.grid {
   text-align: left;
   padding: 0 14px 8px 0;
   white-space: nowrap;
-  border-bottom: 1px solid var(--ink);
   vertical-align: bottom;
 }
 
@@ -110,6 +109,23 @@ table.grid {
 
 .state p {
   margin-bottom: 6px;
+}
+
+/* фильтры встроены в строку под заголовком */
+.grid .filter-row td {
+  padding: 6px 14px 6px 0;
+  border-bottom: 1px solid var(--ink);
+}
+
+.filter-row input[type='search'] {
+  font-size: 13px;
+  min-width: 96px;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.filter-row input[type='search']::-webkit-search-cancel-button {
+  -webkit-appearance: none;
 }
 
 /* ---------- значения ---------- */

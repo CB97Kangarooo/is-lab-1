@@ -17,6 +17,9 @@ export function HeroesPage() {
         loading={table.loading}
         hasData={table.hasData}
         error={table.error}
+        filterInputs={table.filterInputs}
+        filtered={table.filtered}
+        onFilter={table.setFilter}
         onRetry={table.reload}
       />
       <Pager
