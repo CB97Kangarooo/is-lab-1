@@ -74,6 +74,9 @@ public class HumanBeingService {
 
         updateCar(human, request.getCarId());
         humanBeingMapper.updateEntity(human, request);
+        // @Version увеличивается только при flush: без него DTO ушёл бы со старой версией,
+        // и следующее сохранение с ней получило бы ложный 409.
+        humanBeingRepository.flush();
         dataChangedEvent.fire(new DataChangedEvent("HumanBeing", human.getId(), ChangeType.UPDATED));
         return humanBeingMapper.toDto(human);
     }
