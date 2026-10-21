@@ -6,6 +6,7 @@ import { Pager } from '../components/Pager';
 import { useAsyncLoader } from '../hooks/useAsyncLoader';
 import { useFocusReturn } from '../hooks/useFocusReturn';
 import { PAGE_SIZES } from '../hooks/useHeroTable';
+import { useChangeSignal } from '../realtime/useChangeSignal';
 
 export function CarsPage() {
   const [page, setPage] = useState(0);
@@ -18,6 +19,8 @@ export function CarsPage() {
     (signal) => listCars({ offset: page * size, limit: size, freeOnly }, signal),
     [page, size, freeOnly],
   );
+  // новые машины и смена владельцев (правка, удаление героя, Lada Kalina) приходят сигналами human и car
+  useChangeSignal(loader.reload);
   const items = loader.data?.items ?? [];
   const total = loader.data?.total ?? 0;
   const lastPage = Math.max(0, Math.ceil(total / size) - 1);

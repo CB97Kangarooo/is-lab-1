@@ -140,4 +140,9 @@ public class HumanBeingRepository {
     public void remove(HumanBeing human) {
         em.remove(human);
     }
+
+    /** Отправить изменения в БД сейчас, а не при commit: так становится известна новая {@code @Version}. */
+    public void flush() {
+        em.flush();
+    }
 }

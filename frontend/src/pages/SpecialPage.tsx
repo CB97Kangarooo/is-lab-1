@@ -13,6 +13,7 @@ import { MoodScale } from '../components/Cells';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { useHeroDialogs } from '../components/HeroDialogs';
 import { useFocusReturn } from '../hooks/useFocusReturn';
+import { useChangeSignal } from '../realtime/useChangeSignal';
 import { dossierNumber, formatNumber } from '../lib/format';
 
 interface OperationState<T> {
@@ -23,7 +24,9 @@ interface OperationState<T> {
 
 function useOperation<T>() {
   const [state, setState] = useState<OperationState<T>>({ loading: false, result: null, error: null });
+  const last = useRef<(() => Promise<T>) | null>(null);
   const run = useCallback(async (fn: () => Promise<T>) => {
+    last.current = fn;
     setState({ loading: true, result: null, error: null });
     try {
       setState({ loading: false, result: await fn(), error: null });
@@ -31,7 +34,18 @@ function useOperation<T>() {
       setState({ loading: false, result: null, error: errorMessage(error) });
     }
   }, []);
-  return { ...state, run };
+  /** Тихо пересчитать показанный результат (данные изменили другие): без «Считаю…» и без мигания. */
+  const refresh = useCallback(async () => {
+    const fn = last.current;
+    if (!fn) return;
+    try {
+      const result = await fn();
+      setState((prev) => (prev.loading ? prev : { loading: false, result, error: null }));
+    } catch (error) {
+      setState((prev) => (prev.loading ? prev : { loading: false, result: null, error: errorMessage(error) }));
+    }
+  }, []);
+  return { ...state, run, refresh };
 }
 
 function Block({ no, title, hint, children }: { no: string; title: string; hint?: string; children: ReactNode }) {
@@ -85,6 +99,16 @@ export function SpecialPage() {
   const heroDialogs = useHeroDialogs(() => {
     if (searched.current !== null) void runSearch(searched.current);
   });
+
+  // герои изменились у других клиентов: пересчитываем то, что уже показано (сумма, среднее, поиск)
+  useChangeSignal(
+    () => {
+      if (sum.result) void sum.refresh();
+      if (average.result) void average.refresh();
+      if (search.result) void search.refresh();
+    },
+    { entities: ['human'] },
+  );
 
   const submitSearch = (event: FormEvent) => {
     event.preventDefault();

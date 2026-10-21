@@ -1,3 +1,11 @@
+-- Функции из functions.sql зависят от таблиц (find_by_name_prefix возвращает SETOF human_being),
+-- поэтому при повторном запуске их нужно удалить раньше таблиц. После этого скрипта снова выполнить functions.sql.
+DROP FUNCTION IF EXISTS find_by_name_prefix(TEXT);
+DROP FUNCTION IF EXISTS sum_impact_speed();
+DROP FUNCTION IF EXISTS avg_impact_speed();
+DROP FUNCTION IF EXISTS set_all_mood_sorrow();
+DROP FUNCTION IF EXISTS assign_lada_kalina();
+
 DROP TABLE IF EXISTS human_being;
 DROP TABLE IF EXISTS car;
 

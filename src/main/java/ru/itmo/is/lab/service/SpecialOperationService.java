@@ -90,7 +90,7 @@ public class SpecialOperationService {
 
     private void publishBulkUpdate(int affectedRows) {
         if (affectedRows > 0) {
-            dataChangedEvent.fire(new DataChangedEvent("HumanBeing", null, ChangeType.UPDATED));
+            dataChangedEvent.fire(new DataChangedEvent("HumanBeing", null, ChangeType.BULK));
         }
     }
 }

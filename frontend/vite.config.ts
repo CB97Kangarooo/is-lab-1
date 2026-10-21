@@ -1,7 +1,7 @@
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// Dev-сервер проксирует /api на локальный WildFly.
+// Dev-сервер проксирует /api и WebSocket /ws на локальный WildFly.
 // Адрес приложения (с контекстом) меняется через frontend/.env.local: BACKEND_URL=http://localhost:8080/lab-is
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
@@ -18,6 +18,13 @@ export default defineConfig(({ mode }) => {
         '/api': {
           target: backend.origin,
           changeOrigin: true,
+          rewrite: (path: string) => contextPath + path,
+        },
+        // WebSocket-сигналы об изменениях (шаг 7): тот же бэкенд и контекст, ws: true включает проксирование upgrade.
+        '/ws': {
+          target: backend.origin,
+          changeOrigin: true,
+          ws: true,
           rewrite: (path: string) => contextPath + path,
         },
       },

@@ -4,11 +4,14 @@ import { HeroTable } from '../components/HeroTable';
 import { useHeroDialogs } from '../components/HeroDialogs';
 import { Pager } from '../components/Pager';
 import { useHeroTable } from '../hooks/useHeroTable';
+import { useChangeSignal } from '../realtime/useChangeSignal';
 
 export function HeroesPage() {
   const table = useHeroTable();
   // после любого изменения таблица перезагружается с текущими страницей, сортировкой и фильтрами
   const heroDialogs = useHeroDialogs(table.reload);
+  // изменения других клиентов: та же страница, сортировка и фильтры; пачка сигналов — один запрос
+  useChangeSignal(table.reload, { entities: ['human'] });
 
   const [openId, setOpenId] = useState('');
   const [openIdError, setOpenIdError] = useState<string | null>(null);
