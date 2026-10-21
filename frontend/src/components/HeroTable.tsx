@@ -1,0 +1,168 @@
+import type { ReactNode } from 'react';
+import type { Hero } from '../api/types';
+import type { FilterKey, Filters, SortState } from '../hooks/useHeroTable';
+import { formatDate } from '../lib/format';
+import { Flag, ImpactSpeed, MoodScale, Text } from './Cells';
+
+interface Column {
+  id: string;
+  /** Ключ сортировки на сервере. */
+  sortKey: string;
+  label: string;
+  numeric?: boolean;
+  wide?: boolean;
+  /** Колонка с серверным фильтром по неполному совпадению. */
+  filter?: FilterKey;
+  render: (hero: Hero) => ReactNode;
+}
+
+const COLUMNS: Column[] = [
+  { id: 'id', sortKey: 'id', label: 'id', numeric: true, render: (h) => h.id },
+  { id: 'name', sortKey: 'name', label: 'name', wide: true, filter: 'name', render: (h) => h.name },
+  { id: 'x', sortKey: 'coordinates.x', label: 'x', numeric: true, render: (h) => h.coordinates.x },
+  { id: 'y', sortKey: 'coordinates.y', label: 'y', numeric: true, render: (h) => h.coordinates.y },
+  { id: 'creationDate', sortKey: 'creationDate', label: 'creationDate', render: (h) => formatDate(h.creationDate) },
+  { id: 'realHero', sortKey: 'realHero', label: 'realHero', render: (h) => <Flag value={h.realHero} /> },
+  { id: 'hasToothpick', sortKey: 'hasToothpick', label: 'hasToothpick', render: (h) => <Flag value={h.hasToothpick} /> },
+  { id: 'car.name', sortKey: 'car.name', label: 'car.name', wide: true, filter: 'car.name', render: (h) => <Text value={h.car?.name} /> },
+  { id: 'car.cool', sortKey: 'car.cool', label: 'car.cool', render: (h) => <Flag value={h.car ? h.car.cool : null} /> },
+  { id: 'mood', sortKey: 'mood', label: 'mood', filter: 'mood', render: (h) => <MoodScale mood={h.mood} /> },
+  { id: 'impactSpeed', sortKey: 'impactSpeed', label: 'impactSpeed', render: (h) => <ImpactSpeed value={h.impactSpeed} /> },
+  { id: 'weaponType', sortKey: 'weaponType', label: 'weaponType', filter: 'weaponType', render: (h) => <Text value={h.weaponType} /> },
+];
+
+interface HeroTableProps {
+  items: Hero[];
+  sort: SortState | null;
+  onSort: (key: string) => void;
+  loading: boolean;
+  hasData: boolean;
+  error: string | null;
+  filterInputs: Filters;
+  filtered: boolean;
+  onFilter: (key: FilterKey, value: string) => void;
+  onOpen: (hero: Hero) => void;
+  onEdit: (hero: Hero) => void;
+  onDelete: (hero: Hero) => void;
+  onRetry: () => void;
+}
+
+export function HeroTable({
+  items,
+  sort,
+  onSort,
+  loading,
+  hasData,
+  error,
+  filterInputs,
+  filtered,
+  onFilter,
+  onOpen,
+  onEdit,
+  onDelete,
+  onRetry,
+}: HeroTableProps) {
+  const colSpan = COLUMNS.length + 1;
+
+  let stateRow: ReactNode = null;
+  if (error) {
+    stateRow = (
+      <div className="state" role="alert">
+        <p>{error}</p>
+        <button type="button" className="btn btn-primary" onClick={onRetry}>
+          Повторить
+        </button>
+      </div>
+    );
+  } else if (!hasData) {
+    stateRow = <div className="state muted">Загрузка…</div>;
+  } else if (items.length === 0) {
+    stateRow = (
+      <div className="state muted">{filtered ? 'Ничего не найдено по заданным фильтрам' : 'Героев нет'}</div>
+    );
+  }
+
+  return (
+    <>
+      <div className="table-wrap" aria-busy={loading}>
+        <table className="grid">
+          <thead>
+            <tr>
+              {COLUMNS.map((col) => {
+                const active = sort?.key === col.sortKey ? sort : null;
+                return (
+                  <th
+                    key={col.id}
+                    scope="col"
+                    className={col.numeric ? 'num' : undefined}
+                    aria-sort={active ? (active.order === 'asc' ? 'ascending' : 'descending') : 'none'}
+                  >
+                    <button type="button" className="th-sort" onClick={() => onSort(col.sortKey)}>
+                      {col.label}
+                      <span className="sort-mark" aria-hidden="true">
+                        {active ? (active.order === 'asc' ? '↑' : '↓') : ''}
+                      </span>
+                    </button>
+                  </th>
+                );
+              })}
+              <th scope="col" className="actions-head">
+                <span className="visually-hidden">Действия</span>
+              </th>
+            </tr>
+            <tr className="filter-row">
+              {COLUMNS.map((col) => (
+                <td key={col.id}>
+                  {col.filter && (
+                    <input
+                      type="search"
+                      value={filterInputs[col.filter]}
+                      onChange={(e) => onFilter(col.filter!, e.target.value)}
+                      placeholder="фильтр"
+                      aria-label={`Фильтр по ${col.label}`}
+                      autoComplete="off"
+                      spellCheck={false}
+                    />
+                  )}
+                </td>
+              ))}
+              <td />
+            </tr>
+          </thead>
+          <tbody>
+            {!error &&
+              items.map((hero) => (
+                <tr key={hero.id}>
+                  {COLUMNS.map((col) => (
+                    <td key={col.id} className={[col.numeric ? 'num' : '', col.wide ? 'wide' : ''].join(' ').trim() || undefined}>
+                      {col.render(hero)}
+                    </td>
+                  ))}
+                  <td className="actions">
+                    <button type="button" className="btn" aria-label={`Открыть героя ${hero.id}`} onClick={() => onOpen(hero)}>
+                      открыть
+                    </button>
+                    <span aria-hidden="true"> · </span>
+                    <button type="button" className="btn" aria-label={`Изменить героя ${hero.id}`} onClick={() => onEdit(hero)}>
+                      изменить
+                    </button>
+                    <span aria-hidden="true"> · </span>
+                    <button type="button" className="btn" aria-label={`Удалить героя ${hero.id}`} onClick={() => onDelete(hero)}>
+                      удалить
+                    </button>
+                  </td>
+                </tr>
+              ))}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colSpan={colSpan} className="state-cell">
+                {stateRow}
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </>
+  );
+}
