@@ -10,6 +10,7 @@
 
         <class>ru.itmo.is.lab.entity.HumanBeing</class>
         <class>ru.itmo.is.lab.entity.Car</class>
+        <class>ru.itmo.is.lab.entity.AppUser</class>
         <exclude-unlisted-classes>false</exclude-unlisted-classes>
 
         <validation-mode>CALLBACK</validation-mode>

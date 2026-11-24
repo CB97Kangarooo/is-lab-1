@@ -1,0 +1,59 @@
+input[type='password'] {
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  border-radius: 0;
+  padding: 5px 0;
+  width: 100%;
+  min-width: 0;
+}
+
+input[type='password']:hover {
+  border-bottom-color: var(--ink);
+}
+
+input[type='password']:focus {
+  border-bottom-color: var(--accent);
+}
+
+.auth {
+  max-width: 420px;
+  padding-top: 15vh;
+}
+
+.auth-title {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 3.2rem;
+  line-height: 0.95;
+  letter-spacing: -0.01em;
+  margin-bottom: 32px;
+}
+
+.auth-form {
+  display: grid;
+  gap: 20px;
+}
+
+.auth-form h2 {
+  font-size: 14px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.auth-actions {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px 24px;
+  flex-wrap: wrap;
+}
+
+.topbar-user {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 12px;
+}

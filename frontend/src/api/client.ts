@@ -1,4 +1,3 @@
-/** Ошибка API в контракте бэкенда: {message, fieldErrors: {поле: сообщение}}. */
 export class ApiError extends Error {
   readonly status: number;
   readonly fieldErrors: Record<string, string>;
@@ -19,6 +18,12 @@ interface RequestOptions {
   signal?: AbortSignal;
 }
 
+let unauthorizedHandler: (() => void) | null = null;
+
+export function setUnauthorizedHandler(handler: (() => void) | null): void {
+  unauthorizedHandler = handler;
+}
+
 export function isAbortError(error: unknown): boolean {
   return error instanceof DOMException && error.name === 'AbortError';
 }
@@ -28,7 +33,6 @@ export function errorMessage(error: unknown): string {
 }
 
 function buildUrl(path: string, query?: Record<string, QueryValue>): string {
-  // Путь без ведущего «/»: адрес считается от корня контекста приложения (/lab-is/), а не от корня хоста.
   let url = 'api' + path;
   if (query) {
     const params = new URLSearchParams();
@@ -60,7 +64,6 @@ function toApiError(status: number, data: unknown): ApiError {
       return new ApiError(status, body.message, fieldErrors);
     }
   }
-  // Ответ не в формате API (например, страница ошибки прокси или контейнера).
   if (status === 502 || status === 503 || status === 504) {
     return new ApiError(status, 'Сервер недоступен. Повторите попытку позже.');
   }
@@ -101,6 +104,9 @@ export async function request<T>(method: string, path: string, options: RequestO
   }
 
   if (!response.ok) {
+    if (response.status === 401 && !path.startsWith('/auth/')) {
+      unauthorizedHandler?.();
+    }
     throw toApiError(response.status, data);
   }
   return data as T;

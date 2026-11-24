@@ -2,7 +2,9 @@ import { HashRouter, NavLink, Navigate, Route, Routes } from 'react-router-dom';
 import { HeroesPage } from './pages/HeroesPage';
 import { CarsPage } from './pages/CarsPage';
 import { SpecialPage } from './pages/SpecialPage';
+import { LoginPage } from './pages/LoginPage';
 import { ConnectionStatus } from './components/ConnectionStatus';
+import { AuthProvider, useAuth } from './auth/AuthProvider';
 import { RealtimeProvider } from './realtime/RealtimeProvider';
 
 const NAV = [
@@ -12,6 +14,39 @@ const NAV = [
 ];
 
 export function App() {
+  return (
+    <AuthProvider>
+      <Gate />
+    </AuthProvider>
+  );
+}
+
+function Gate() {
+  const { state, retry } = useAuth();
+
+  if (state.kind === 'loading') {
+    return <p className="shell muted">Проверяем вход…</p>;
+  }
+  if (state.kind === 'failed') {
+    return (
+      <div className="shell">
+        <div className="banner" role="alert">
+          {state.message}
+          <button type="button" className="btn" onClick={retry}>
+            повторить
+          </button>
+        </div>
+      </div>
+    );
+  }
+  if (state.kind === 'anonymous') {
+    return <LoginPage />;
+  }
+  return <Workspace username={state.user.username} />;
+}
+
+function Workspace({ username }: { username: string }) {
+  const { signOut } = useAuth();
   return (
     <RealtimeProvider>
       <HashRouter>
@@ -27,6 +62,12 @@ export function App() {
                   {item.label}
                 </NavLink>
               ))}
+              <span className="topbar-user">
+                <span className="muted">{username}</span>
+                <button type="button" className="btn" onClick={() => void signOut()}>
+                  выйти
+                </button>
+              </span>
             </nav>
           </div>
         </header>
