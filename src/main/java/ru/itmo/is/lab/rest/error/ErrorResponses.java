@@ -4,7 +4,9 @@ import ru.itmo.is.lab.entity.Mood;
 import ru.itmo.is.lab.entity.WeaponType;
 import ru.itmo.is.lab.exception.BadRequestException;
 import ru.itmo.is.lab.exception.CarNotAvailableException;
+import ru.itmo.is.lab.exception.InvalidCredentialsException;
 import ru.itmo.is.lab.exception.ResourceNotFoundException;
+import ru.itmo.is.lab.exception.UsernameTakenException;
 import ru.itmo.is.lab.rest.dto.ErrorResponse;
 
 import javax.json.JsonException;
@@ -30,10 +32,6 @@ import java.util.TreeSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Единое место, где доменные и технические ошибки превращаются в HTTP-ответ
- * {@code {message, fieldErrors}}. Все ExceptionMapper'ы только делегируют сюда.
- */
 public final class ErrorResponses {
 
     private static final Logger LOGGER = Logger.getLogger(ErrorResponses.class.getName());
@@ -42,14 +40,13 @@ public final class ErrorResponses {
     private static final String SQLSTATE_UNIQUE_VIOLATION = "23505";
     private static final String SQLSTATE_FOREIGN_KEY_VIOLATION = "23503";
     private static final String CAR_UNIQUE_CONSTRAINT = "uq_human_car";
+    private static final String USERNAME_UNIQUE_CONSTRAINT = "uq_app_user_username";
 
-    /** Поля сущности, названные в запросе иначе (для нарушений, поднятых JPA-валидацией сущности). */
     private static final Map<String, String> ENTITY_TO_DTO_FIELD = Collections.singletonMap("car", "carId");
 
     private ErrorResponses() {
     }
 
-    /** Статус и тело ошибки; отделено от {@link Response}, чтобы логику можно было проверять без JAX-RS. */
     public static final class ApiError {
 
         private final int status;
@@ -102,7 +99,6 @@ public final class ErrorResponses {
         return error(400, message, fieldErrors);
     }
 
-    /** Путь нарушения → имя поля входного DTO: {@code coordinates.x}; узлы метода и параметра отбрасываются. */
     static String fieldKey(Path path) {
         StringBuilder key = new StringBuilder();
         for (Path.Node node : path) {
@@ -124,6 +120,14 @@ public final class ErrorResponses {
 
     public static ApiError carNotAvailable(String message) {
         return error(409, message, Collections.singletonMap("carId", message));
+    }
+
+    public static ApiError usernameTaken(String message) {
+        return error(409, message, Collections.singletonMap("username", message));
+    }
+
+    public static ApiError invalidCredentials(String message) {
+        return error(401, message);
     }
 
     public static ApiError versionConflict() {
@@ -155,11 +159,6 @@ public final class ErrorResponses {
         }
     }
 
-    /**
-     * Разбирает цепочку причин: исключение, пойманное на commit, приходит обёрнутым
-     * (TransactionalException → RollbackException → PersistenceException → ...).
-     * Неопознанное — 500 без подробностей в теле и с логом на сервере.
-     */
     public static ApiError resolve(Throwable error) {
         Throwable current = error;
         for (int depth = 0; current != null && depth < MAX_CAUSE_DEPTH; depth++) {
@@ -189,6 +188,12 @@ public final class ErrorResponses {
         if (t instanceof CarNotAvailableException) {
             return carNotAvailable(t.getMessage());
         }
+        if (t instanceof UsernameTakenException) {
+            return usernameTaken(t.getMessage());
+        }
+        if (t instanceof InvalidCredentialsException) {
+            return invalidCredentials(t.getMessage());
+        }
         if (t instanceof OptimisticLockException
                 || hasClassNameInHierarchy(t, "org.hibernate.StaleStateException")) {
             return versionConflict();
@@ -199,9 +204,6 @@ public final class ErrorResponses {
         if (t instanceof JsonbException || t instanceof JsonException) {
             return invalidBody();
         }
-        // Последним: завёрнутый WebApplicationException (например, из провайдера) сохраняет свой статус,
-        // иначе 404 или 415 из глубины стал бы 500. Проверка идёт после доменных типов,
-        // потому что они точнее описывают причину.
         if (t instanceof WebApplicationException) {
             int status = ((WebApplicationException) t).getResponse().getStatus();
             return error(status, messageForStatus(status));
@@ -209,12 +211,14 @@ public final class ErrorResponses {
         return null;
     }
 
-    /** Последняя защита от гонок: нарушения ограничений БД, которые не поймала проверка в сервисе. */
     private static ApiError fromSqlState(SQLException e) {
         String state = e.getSQLState();
         if (SQLSTATE_UNIQUE_VIOLATION.equals(state)) {
             if (e.getMessage() != null && e.getMessage().contains(CAR_UNIQUE_CONSTRAINT)) {
                 return carNotAvailable("Эта машина уже занята другим героем");
+            }
+            if (e.getMessage() != null && e.getMessage().contains(USERNAME_UNIQUE_CONSTRAINT)) {
+                return usernameTaken("Это имя уже занято");
             }
             return error(409, "Запись нарушает ограничение уникальности");
         }
@@ -224,7 +228,6 @@ public final class ErrorResponses {
         return null;
     }
 
-    /** Проверка по имени класса: Hibernate не в compile-зависимостях (только javaee-api). */
     private static boolean hasClassNameInHierarchy(Throwable t, String className) {
         for (Class<?> c = t.getClass(); c != null; c = c.getSuperclass()) {
             if (className.equals(c.getName())) {
